@@ -45,23 +45,23 @@
 
 <body>
   <h1>Feedback form</h1>
-  <form>
+  <form id="feedbackForm">
     <div class="control">
-      <!-- add aria-required and for -->
+      <!-- Add aria-required for required fields -->
       <label for="name">Full name <span class="required">*</span></label>
       <input id="name" name="name" type="text" aria-required="true" />
     </div>
     <div class="control">
       <label for="biography">Biography</label>
-      <textarea id="biography" name="biography" type="text"></textarea>
+      <textarea id="biography" name="biography"></textarea>
       <span>Include examples on your skills in JavaScript.</span>
     </div>
 
-    <!-- grouping radio in fieldset -->
-    <!-- added aria-labelledby and aria-describedby -->
+    <!-- Grouping radio inputs in a fieldset -->
+    <!-- Added aria-labelledby and aria-describedby -->
     <fieldset class="control" aria-labelledby="gender-group" aria-describedby="radio-instruction">
       <legend id="gender-group">Gender</legend>
-      <!-- inline instruction for radio -->
+      <!-- Inline instruction for radio -->
       <span id="radio-instruction" class="sr-only">Use the arrow keys to navigate between options</span>
       <div>
         <input id="gender_male" name="gender" type="radio" value="male" />
@@ -80,6 +80,11 @@
     <div class="control">
       <input name="validate" type="hidden" value="1" /><input type="submit" value="Register" />
     </div>
+    <!-- Error notification area -->
+    <fieldset class="errors" aria-live="assertive" style="display:none;">
+      <legend>Errors</legend>
+      <ul></ul>
+    </fieldset>
   </form>
 
   <!-- jQuery for the validation logic -->
@@ -107,8 +112,8 @@
         $input = $('[name="' + input + '"]');
 
         if ((value = $.urlParam(input)) === null) {
-          if ($('fieldset.errors').length === 0) {
-            $('form').prepend('<fieldset class="errors"><legend>Errors</legend><ul></ul></fieldset>');
+          if ($('fieldset.errors').is(':hidden')) {
+            $('fieldset.errors').show(); // Show the errors fieldset when needed
           }
 
           $referencedElement = null;
@@ -124,18 +129,21 @@
             $referencedElement = $input;
           }
 
-          // R.G. hint: fix next line ;)
-          $error = $('<a>' + message + '</a>');
+          // Create an error message linked to the form control
+          $error = $('<li><a href="#" class="error">' + message + '</a></li>');
           $error.click(function (e) {
-            $referencedElement.focus();
-            return e.preventDefault();
+            e.preventDefault(); // Prevent the default anchor behavior
+            $referencedElement.focus(); // Set focus to the referenced element
           });
-          $elementToDescribe.attr('aria-describedby', input + '_description');
-          $errorContainer.append('<li>').find('li:last').append($error);
 
-          if ($(':not(form):focus').length === 0) {
-            // See https://stackoverflow.com/questions/46134247/jquery-setting-focus-doesnt-work-in-ie11/
-          }
+          $elementToDescribe.attr('aria-describedby', input + '_error');
+          $errorContainer.append($error); // Append the error message to the container
+
+          // Focus management: move focus to the errors area if there are errors
+          $('html, body').animate({
+            scrollTop: $('fieldset.errors').offset().top
+          }, 500);
+          $referencedElement.focus(); // Focus on the first error
         } else {
           if ($input.is(':checkbox')) {
             $input.attr('checked', true);
@@ -150,16 +158,22 @@
       };
 
       $(document).ready(function () {
-        if ($.urlParam('validate')) {
+        $('#feedbackForm').on('submit', function (e) {
+          e.preventDefault(); // Prevent default form submission
+          $('fieldset.errors ul').empty(); // Clear previous errors
+          $('fieldset.errors').hide(); // Hide the error fieldset initially
+
+          // Validate inputs and show errors if necessary
           validateInput('name', 'Please enter your name!');
           validateInput('biography', 'Please tell us something about your history!');
           validateInput('gender', 'Please tell us your gender!');
           validateInput('accept_agbs', 'You must accept our terms and conditions!');
 
-          if ($('.error').length === 0) {
-            return alert('All inputs are valid.');
+          // If there are no errors, notify success
+          if ($('fieldset.errors li').length === 0) {
+            alert('All inputs are valid.'); // Notify success
           }
-        }
+        });
       });
     }).call(void 0);
   </script>
